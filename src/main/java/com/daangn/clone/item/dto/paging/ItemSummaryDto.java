@@ -1,13 +1,8 @@
 package com.daangn.clone.item.dto.paging;
 
-import com.daangn.clone.chattingroom.ChattingRoom;
-import com.daangn.clone.common.enums.DelYn;
-import com.daangn.clone.item.Item;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Setter

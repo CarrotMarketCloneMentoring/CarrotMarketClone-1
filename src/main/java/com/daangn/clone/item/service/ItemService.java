@@ -1,7 +1,7 @@
 package com.daangn.clone.item.service;
 
 import com.daangn.clone.category.repository.CategoryRepository;
-import com.daangn.clone.chattingroom.repository.ChattingRoomRepository;
+import com.daangn.clone.chatting.chattingroom.repository.ChattingRoomRepository;
 import com.daangn.clone.common.enums.DelYn;
 import com.daangn.clone.common.enums.ItemStatus;
 import com.daangn.clone.common.enums.Role;
@@ -18,7 +18,7 @@ import com.daangn.clone.itemimage.ItemImage;
 import com.daangn.clone.itemimage.repository.ItemImageRepository;
 import com.daangn.clone.member.Member;
 import com.daangn.clone.member.repository.MemberRepository;
-import com.daangn.clone.chattingmember.ChattingMember;
+import com.daangn.clone.chatting.chattingmember.ChattingMember;
 import com.daangn.clone.town.repository.TownRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -114,7 +114,7 @@ public class ItemService{
 
 
     /** <아이템 목록 조회> */
-    public List<ItemSummaryDto> getItemList(String username,
+    public List<ItemSummaryDto> getItemList(Long memberId,
                                             int page, int limit,
                                             Long townId,
                                             SortCriteria sortCriteria,
@@ -122,7 +122,7 @@ public class ItemService{
 
         //0. 유효성 검사 : 설정한 townId가 , 그 사용자가 속한 town과 관련된 town의 Id 인지 검사
         /** 실제 당근마켓에서는 여러 town들이 설정될 수 있지만, 여기서는 사용자와 Item모두 하나의 town에 속한다는 가정 */
-        if(memberRepository.findByUsername(username).getTown().getId() != townId){
+        if(memberRepository.findByMemberId(memberId).getTown().getId() != townId){
             throw new ApiException(FAIL_GET_ITEM_LIST, "상품 목록을 가져올 town이 , 사용자가 속한 town과 다른 town으로 요청이 들어왔습니다.");
         }
 
@@ -164,7 +164,7 @@ public class ItemService{
     /** *
      * [등록서비스에서 사용되는 유효성 체크 로직]
      */
-    private void checkRegister(List<MultipartFile> files, Long categoryId, Long townId, String username){
+    private void checkRegister(List<MultipartFile> files, Long categoryId, Long townId, Long memberId){
 
        //1. 사진 확장자에 대한 유효성 검사
         if(fileServiceUtil.checkExtension(files)==false){
@@ -182,7 +182,7 @@ public class ItemService{
         //3. townId에 대한 유효성 검사 (만약 살제 당근마켓처럼 사용자가 여러 town에 속하게 된다면, 이게 같지 않냐로 비교하는게 아니라 -> 속하지 않는걸로 비교)
         /** 참고로 굳이 townRepository에서 townId가 유효한 아이디 인지 확인할 필요가 없는게 , 어차피 SellerMember의 Town의 ID라면 유효한 값일 것이기 떄문에
          * 먼저 townId가 유효한 아이디 인지를 검사하고 나중에 그 Member의 townId임을 검사한다면 -> 이는 사실상 중복검사다 */
-        if(memberRepository.findByUsername(username).getTown().getId() != townId){
+        if(memberRepository.findByMemberId(memberId).getTown().getId() != townId){
             throw new ApiException(ApiResponseStatus.FAIL_REGISTER_ITEM, "townId = " + townId + " , 유효하지 않은 townId 값이 들어왔기 때문에, 상품 등록에 실패했습니다.");
         }
 
@@ -192,13 +192,13 @@ public class ItemService{
      * [등록 서비스]
      */
     @Transactional
-    public Long register(String username, RegisterItemDto registerItemDto){
+    public Long register(Long memberId, RegisterItemDto registerItemDto){
 
         //0. 인자로 넘어온 값들의 유효성 검증
-        checkRegister(registerItemDto.getImageList(), registerItemDto.getCategoryId(), registerItemDto.getTownId(), username);
+        checkRegister(registerItemDto.getImageList(), registerItemDto.getCategoryId(), registerItemDto.getTownId(), memberId);
 
         //1. 인자로 넘어온 유효한 값들을 기반으로 Item 엔티티 , ItemImage 엔티티를 생성하여 DB에 먼저 저장 (DB 작업을 먼저 수행해야 함이 핵심)
-        Member sellerMember = memberRepository.findByUsername(username);
+        Member sellerMember = memberRepository.findByMemberId(memberId);
 
         Item item = createItem(registerItemDto, sellerMember);
         itemRepository.save(item);
@@ -251,7 +251,7 @@ public class ItemService{
     /**
      * [유효성 체크 로직] : 채팅을 시도한 EXPECTED_BUYER들의 목록을 가져오는 서비스의 검증 로직
      * */
-    private void checkGetExpectedBuyers(String username, Long itemId){
+    private void checkGetExpectedBuyers(Long memberId, Long itemId){
 
         //  결국 그 Item을 올린 판매자가 == username으로 된 Member가 맞는지를 검증
 
@@ -263,7 +263,7 @@ public class ItemService{
                 }
         );
 
-        if(item.getSellerMember().getId()!=memberRepository.findByUsername(username).getId()){
+        if(item.getSellerMember().getId()!=memberId){
             throw new ApiException(ApiResponseStatus.INVALID_ITEM_ID, "EXPECTED_BUYERS 조회시 : 해당 상품이 , 해당 username의 Member가 올린 상품이 아닙니다.");
         }
     }
@@ -274,11 +274,11 @@ public class ItemService{
      * -> 결국 이들중에서만 진짜 구매자가 나오게 되어 있다. (서비스가 실제로 그렇게 동작)
      * */
 
-    public ExpectedBuyerDto getExpectedBuyers(String username, Long itemId){
+    public ExpectedBuyerDto getExpectedBuyers(Long memberId, Long itemId){
 
         //0. 유효성 체크 -> 이를 통과하면 결국 해당 Item은 해당 Member가 올린 상품이라는것이 증명이 됨
         /** 그래야 이 아이템에게 채팅을 요청한 예비 구매자들을 조회 가능하게 됨 (그럴 권한이 주어진다고 판단 가능)*/
-        checkGetExpectedBuyers(username, itemId);
+        checkGetExpectedBuyers(memberId, itemId);
 
         //1. 해당 상품에 채팅을 요청한 모든 EXPECTED_BUYER들을 조회
 
@@ -341,10 +341,10 @@ public class ItemService{
      * -> 만약 예약중에서 판매완료로 변경하는 경우에는 -> 자동으로 판매 완료로 변경할 때 , 예약자로 선택한 사람에게 판매가 완료된다
      *
      * */
-    private void checkChangeToFOR_SALE(String username, Long itemId){
+    private void checkChangeToFOR_SALE(Long memberId, Long itemId){
 
         //결국 itemId가 유효해야 하고 , 그 Item이 이 Member가 올린 상품이어야 한다는 검증 로직이 여기서도 적용되어야 하므로 , 메서드 호출
-        checkGetExpectedBuyers(username, itemId);
+        checkGetExpectedBuyers(memberId, itemId);
 
         //이제 username, itemId에 대한 검증은 마쳤으니 , nextSituation에 관련한 검증 시작
         Item item = itemRepository.findOne(itemId);
@@ -355,10 +355,10 @@ public class ItemService{
 
     }
 
-    private void checkChangeToRESERVED(String username, Long itemId, Long buyerMemberId){
+    private void checkChangeToRESERVED(Long memberId, Long itemId, Long buyerMemberId){
 
         //결국 itemId가 유효해야 하고 , 그 Item이 이 Member가 올린 상품이어야 한다는 검증 로직이 여기서도 적용되어야 하므로 , 메서드 호출
-        checkGetExpectedBuyers(username, itemId);
+        checkGetExpectedBuyers(memberId, itemId);
 
         //이제 username, itemId에 대한 검증은 마쳤으니 , nextSituation에 관련한 검증 시작
         Item item = itemRepository.findOne(itemId);
@@ -374,10 +374,10 @@ public class ItemService{
 
     }
 
-    private void checkChangeToSOLD_OUT(String username, Long itemId, Long buyerMemberId){
+    private void checkChangeToSOLD_OUT(Long memberId, Long itemId, Long buyerMemberId){
 
         //결국 itemId가 유효해야 하고 , 그 Item이 이 Member가 올린 상품이어야 한다는 검증 로직이 여기서도 적용되어야 하므로 , 메서드 호출
-        checkGetExpectedBuyers(username, itemId);
+        checkGetExpectedBuyers(memberId, itemId);
 
         //이제 username, itemId에 대한 검증은 마쳤으니 , nextSituation에 관련한 검증 시작
         Item item = itemRepository.findOne(itemId);
@@ -401,10 +401,10 @@ public class ItemService{
      * [판매 상태를 변경시키는 서비스]
      * */
     @Transactional
-    public ChangedSituationDto changeToFOR_SALE(String username, Long itemId){
+    public ChangedSituationDto changeToFOR_SALE(Long memberId, Long itemId){
 
         //0. 검증 로직
-        checkChangeToFOR_SALE(username, itemId);
+        checkChangeToFOR_SALE(memberId, itemId);
 
         //1. 상품 상태를 판매중으로 변경하고 && buyerMemberId 값을 null로 비워줌
         changeItemStatus(itemId, FOR_SALE);
@@ -418,10 +418,10 @@ public class ItemService{
     }
 
     @Transactional
-    public ChangedSituationDto changeToRESERVED(String username, Long itemId, Long buyermemberId){
+    public ChangedSituationDto changeToRESERVED(Long memberId, Long itemId, Long buyermemberId){
 
         //0. 검증 로직
-        checkChangeToRESERVED(username, itemId, buyermemberId);
+        checkChangeToRESERVED(memberId, itemId, buyermemberId);
 
         //1. 상품 상태를 예약중으로 변경하고 && buyerMemberId 값을 넘어온 값으로 설정해줌
         // 어차피 위 검증로직에서 , 이 Item은 이 username의 사용자가 올린게 맞고
@@ -437,10 +437,10 @@ public class ItemService{
     }
 
     @Transactional
-    public ChangedSituationDto changeToSOLD_OUT(String username, Long itemId, Long buyerMemberId){
+    public ChangedSituationDto changeToSOLD_OUT(Long memberId, Long itemId, Long buyerMemberId){
 
         //0. 검증 로직
-        checkChangeToSOLD_OUT(username, itemId, buyerMemberId);
+        checkChangeToSOLD_OUT(memberId, itemId, buyerMemberId);
 
         //1. 상품 상태를 예약중으로 변경하고 && buyerMemberId 값을 넘어온 값으로 설정해줌
         changeItemStatus(itemId, SOLD_OUT);

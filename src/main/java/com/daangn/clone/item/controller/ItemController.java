@@ -5,6 +5,7 @@ import com.daangn.clone.common.enums.ItemStatus;
 import com.daangn.clone.item.dto.*;
 import com.daangn.clone.item.dto.paging.ItemSummaryDto;
 import com.daangn.clone.item.dto.paging.ItemsReq;
+import com.daangn.clone.item.dto.update.ChangeRequest;
 import com.daangn.clone.item.service.ItemService;
 import com.daangn.clone.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -29,12 +30,12 @@ public class ItemController {
 
     /** [API] : 최신 상품 목록 조회 - 페이징 사용 , 이때 어떤 town의 Item을 볼지는 외부 요청에 의해 받는걸로! */
     @GetMapping("/items")
-    public ApiResponse<List<ItemSummaryDto>> getItemList(@RequestAttribute String username,
+    public ApiResponse<List<ItemSummaryDto>> getItemList(@RequestAttribute Long memberId,
                                                          @Validated @ModelAttribute ItemsReq itemsReq){
 
          //아이템 목록 조회하여 반환
         return ApiResponse.success(itemService.getItemList(
-                username,
+                memberId,
                 itemsReq.getPage(), itemsReq.getLimit(),
                 itemsReq.getTownId(),
                 itemsReq.getSortCriteria(),
@@ -65,7 +66,7 @@ public class ItemController {
     /** [API] : 상품 등록 */
 
     @PostMapping("/item")
-    public ApiResponse<Long> registerItem (@RequestAttribute  String username,
+    public ApiResponse<Long> registerItem (@RequestAttribute  Long memberId,
                                            @Validated @ModelAttribute RegistserItemReq request){
 
         /** POST 전송 방식이지만 , 이미지라는 binary data를 전송해야 하고 - 그러기위해서는 multi part form data 전송방식으로 데이터를
@@ -78,7 +79,7 @@ public class ItemController {
         /** request로 받은 {title, content, price, categoryId} 를 -> Service계층으로 넘길 때에는 -> 별도의 dto로 변환해서 넘김 */
 
         return ApiResponse.success(
-        itemService.register(username,
+        itemService.register(memberId,
                 RegisterItemDto.builder()
                 .title(request.getTitle())
                 .content(request.getContent())
@@ -93,8 +94,8 @@ public class ItemController {
 
     /** [API] : 해당 Item에 채팅을 시도한 EXPECTED_BUYER들을 조회하는 기능 */
     @GetMapping("/item/buyers/{itemId}")
-    public ApiResponse<ExpectedBuyerDto> getExpectedBuyers(@RequestAttribute String username, @PathVariable Long itemId){
-        return ApiResponse.success(itemService.getExpectedBuyers(username, itemId));
+    public ApiResponse<ExpectedBuyerDto> getExpectedBuyers(@RequestAttribute Long memberId, @PathVariable Long itemId){
+        return ApiResponse.success(itemService.getExpectedBuyers(memberId, itemId));
     }
 
     /**
@@ -105,16 +106,15 @@ public class ItemController {
      *  2. 해당 아이템의 SaleSituation 값을 SOLD_OUT 으로 변경한다.
      *
      * */
-    @PatchMapping("/item/{itemId}/{buyerMemberId}")
-    public ApiResponse<ChangedSituationDto> changeSaleSituation(@RequestAttribute String username,
-                                                                @PathVariable Long itemId, @PathVariable Long buyerMemberId,
-                                                                @RequestParam ItemStatus itemStatus){
-        if(itemStatus == FOR_SALE){
-            return ApiResponse.success(itemService.changeToFOR_SALE(username, itemId));
-        } else if(itemStatus == RESERVED){
-            return ApiResponse.success(itemService.changeToRESERVED(username, itemId, buyerMemberId));
+    @PatchMapping("/item/itemStatus")
+    public ApiResponse<ChangedSituationDto> changeSaleSituation(@RequestAttribute Long memberId,
+                                                                @Validated @RequestBody ChangeRequest changeRequest){
+        if(changeRequest.getItemStatus() == FOR_SALE){
+            return ApiResponse.success(itemService.changeToFOR_SALE(memberId, changeRequest.getItemId()));
+        } else if(changeRequest.getItemStatus() == RESERVED){
+            return ApiResponse.success(itemService.changeToRESERVED(memberId, changeRequest.getItemId(), changeRequest.getBuyerMemberId()));
         } else{
-            return ApiResponse.success(itemService.changeToSOLD_OUT(username, itemId, buyerMemberId));
+            return ApiResponse.success(itemService.changeToSOLD_OUT(memberId, changeRequest.getItemId(), changeRequest.getBuyerMemberId()));
         }
 
     }

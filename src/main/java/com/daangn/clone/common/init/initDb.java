@@ -1,13 +1,13 @@
 package com.daangn.clone.common.init;
 
-import com.daangn.clone.chattingcontent.ChattingContent;
-import com.daangn.clone.chattingroom.ChattingRoom;
+import com.daangn.clone.chatting.chattingcontent.ChattingContent;
+import com.daangn.clone.chatting.chattingroom.ChattingRoom;
 import com.daangn.clone.common.enums.*;
 import com.daangn.clone.category.Category;
 import com.daangn.clone.item.Item;
 import com.daangn.clone.itemimage.ItemImage;
 import com.daangn.clone.member.Member;
-import com.daangn.clone.chattingmember.ChattingMember;
+import com.daangn.clone.chatting.chattingmember.ChattingMember;
 import com.daangn.clone.town.Town;
 import com.daangn.clone.wish.Wish;
 

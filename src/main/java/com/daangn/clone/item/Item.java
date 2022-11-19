@@ -2,7 +2,7 @@ package com.daangn.clone.item;
 
 import com.daangn.clone.common.BasicEntity;
 import com.daangn.clone.category.Category;
-import com.daangn.clone.chattingroom.ChattingRoom;
+import com.daangn.clone.chatting.chattingroom.ChattingRoom;
 import com.daangn.clone.common.enums.DelYn;
 import com.daangn.clone.common.enums.ItemStatus;
 import com.daangn.clone.itemimage.ItemImage;

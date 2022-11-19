@@ -3,7 +3,7 @@ package com.daangn.clone.member;
 import com.daangn.clone.common.BasicEntity;
 import com.daangn.clone.common.enums.Status;
 import com.daangn.clone.item.Item;
-import com.daangn.clone.chattingmember.ChattingMember;
+import com.daangn.clone.chatting.chattingmember.ChattingMember;
 import com.daangn.clone.town.Town;
 import com.daangn.clone.wish.Wish;
 import lombok.*;

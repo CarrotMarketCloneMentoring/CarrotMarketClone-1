@@ -34,23 +34,23 @@ public class AuthInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
 
         /**  1. jwtUtil을 사용하여 토큰에 저장된 username 정보를 꺼냄 */
-        Optional<Claims> username = Optional.ofNullable(request.getHeader("token"))
+        Optional<Claims> memberId = Optional.ofNullable(request.getHeader("token"))
                 .map(t -> jwtUtil.parseJwtToken(t));
 
 
         // 만약 해석된 username 값이 존재하지 않는다면 -> 이는 필수 헤더인 token 값이 존재하지 않았기 떄문 -> 그에 따른 응답을 보낸다
-        if(username.isEmpty()){
+        if(memberId.isEmpty()){
             return sendErrorResponse(true, false, response, ApiResponseStatus.NO_JWT_TOKEN);
         }
 
         // jwt token에 저장된 username 꺼내서 , 그 값이 유효한지를 판단
-        if(!memberRepository.existsByUsernameAndStatus(String.valueOf(username.get().getSubject()), Status.ACTIVE)){
+        if(!memberRepository.existsByIdAndStatus(Long.valueOf(memberId.get().getSubject()), Status.ACTIVE)){
             return sendErrorResponse(false, false, response, ApiResponseStatus.INVALID_JWT_TOKEN);
         }
 
         /** 2. jwt token이 존재하고 , 그 token이 유효하다면 (그 token안에 든 kakaoId가 유효) -> preHandle() 에서 true를 반환하여 ,
          * Controller에게 요청이 전달하게 해줌 -> 즉 인가를 실행 */
-        request.setAttribute("username",String.valueOf( username.get().getSubject()));
+        request.setAttribute("memberId",Long.valueOf( memberId.get().getSubject()));
         return true;
     }
 

@@ -69,7 +69,14 @@ public enum ApiResponseStatus {
 
     NESTED_USERNAME(false, 2101, "이미 사용중인 아이디 입니다."),
     NESTED_NICKNAME(false, 2102, "이미 사용중인 닉네임 입니다."),
-    FAIL_LOGIN(false, 2103, "로그인에 실패하였습니다."),
+
+    INVALID_USERNAME_AT_LOGIN(false, 2121, "로그인시 아이디가 잘못되었습니다."),
+    INVALID_PASSWORD_AT_LOGIN(false, 2122, "로그인시 비밀번호가 잘못되었습니다."),
+    INVALID_MEMBER_STATUS(false, 2123, "이미 탈퇴한 회원입니다."),
+
+
+    NOT_MATCHED_PASSWORD_RULE(false, 2141, "비밀번호는 영문, 숫자, 특수문자로 이루어진 8~20자리 문자열 이어야 합니다."),
+
 
 
 
@@ -103,12 +110,12 @@ public enum ApiResponseStatus {
 
 
     FAIL_SAVE_CHATTING(false, 2801, "채팅 데이터를 저장하는데 실패했습니다."),
-    NO_NOT_READ_MESSAGE(false,2821, "더이상 아직 읽지 않은 메세지가 없습니다."),
+
     INVALID_SEND_MESSAGE(false, 2841, "메세지를 보낼 채팅 룸 ID or 상대방 Member ID가 잘못되었습니다."),
     SAME_SENDER_RECEIVER(false, 2842, "메세지를 보내는 송신자와 수신자가 같을수는 없습니다."),
     FAIL_ENTER_CHATTING_ROOM(false,2861, "채팅방 입장 여부를 나타내는 MemberChatting의 InRoomYn 값을 업데이트 하는데 실패하여 , 채팅방 입장.퇴장에 실패하였습니다."),
 
-
+    NOT_PARTICIPATE_MEMBER(false, 2901, "해당 사용자는 해당 채팅방에 참여하고 있는 멤버가 아닙니다."),
 
     /**
      * 3000 : Response 오류

@@ -49,6 +49,13 @@ public class ApiResponse<T> {
     }
 
     /** API 성공시 나가는 응답 */
+
+    public static ApiResponse success(){
+        return new ApiResponse(ApiResponseStatus.SUCCESS.isSuccess(),
+                                ApiResponseStatus.SUCCESS.getCode(),
+                                ApiResponseStatus.SUCCESS.getMessage());
+    }
+
     public static <T> ApiResponse<T> success(T result){
         return new ApiResponse<>(ApiResponseStatus.SUCCESS.isSuccess(), ApiResponseStatus.SUCCESS.getCode(), ApiResponseStatus.SUCCESS.getMessage(), result);
     }
