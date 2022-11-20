@@ -1,5 +1,11 @@
 spring:
 
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 100MB
+
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/carrot
@@ -7,9 +13,9 @@ spring:
     password: kkt1326!
 
   jpa:
-    #open-in-view: false
+    open-in-view: false
     hibernate:
-      ddl-auto: create
+      ddl-auto: none
     properties:
       hibernate:
         #        show_sql: true
@@ -17,8 +23,23 @@ spring:
         default_batch_fetch_size: 100
 
 
+
 logging.level:
   org.hibernate.SQL: debug
 #  org.hibernate.type: trace
+
+file:
+  dir: /Users/lupi./Desktop/carrot/image
+
+sample:
+  dir: /Users/lupi./Desktop/carrot/sample/sample.png
+
+
+chatting:
+  dir: /Users/lupi./Desktop/carrot/chatting
+
+
+jwt:
+  password: AA993906-44D7-47B5-87B0-1330C290CC0D
 
 
