@@ -30,7 +30,7 @@ public class ChattingController {
 
 
     /**
-     * [API] : 구매를 위한 채팅 요청 -> 어디까지나 해당 요청에 의한 채팅방 정보만 넘겨주는 기능
+     * [API 13] : 구매를 위한 채팅 요청 -> 어디까지나 해당 요청에 의한 채팅방 정보만 넘겨주는 기능
      *
      * case 1. 해당 아이템에 해당 사용자가 채팅을 요청한적이 없는 경우 (사실 이 여부만 check해주면 됨 )
      *          -> 새로운 ChattingRoom을 새로 만들어서 그 정보를 반환
@@ -45,7 +45,7 @@ public class ChattingController {
     }
 
     /**
-     * [API] : 내가 참여한 모든 채팅방 조회 -> 어디까지나 내가 참여한 채팅방들 정보만 넘겨주는 기능
+     * [API 14] : 내가 참여한 모든 채팅방 조회 -> 어디까지나 내가 참여한 채팅방들 정보만 넘겨주는 기능
      * -> 하단의 채팅 탭을 눌렀을 때 , 자신이 Seller로든 + EXPECTED_BUYER로든 참여한 모든 채팅방 정보를 리스트로 반환
      * -> 여기서 넘어가는 ChattingRoom의 정렬 기준은 - 생성일자를 기준으로 내림차순 (즉 생성된 최신순)
      *
@@ -60,7 +60,7 @@ public class ChattingController {
     }
 
     /**
-     * [API] : 특정 ChattingRoom의 특정 targetMember에게 메세지를 보내는 기능
+     * [API 15] : 특정 ChattingRoom의 특정 targetMember에게 메세지를 보내는 기능
      * */
     @PostMapping("/chat/content")
     public ApiResponse<ChattingContentDto> postChattingContent(@RequestAttribute Long memberId,
@@ -74,7 +74,7 @@ public class ChattingController {
     }
 
     /**
-     * [API] : 특정 ChattingRoom에 참여중인 특정 targetMember에게 온 메세지를 넘겨주는 기능 (즉 메세지 수신)
+     * [API 16] : 특정 ChattingRoom에 참여중인 특정 targetMember에게 온 메세지를 넘겨주는 기능 (즉 메세지 수신)
      * => 이때 넘겨주는 메세지는 , 해당 targetMember가 마지막으로 읽은 메세지 이후로 온 메세지를 전부 넘겨준다
      * */
 
@@ -90,7 +90,7 @@ public class ChattingController {
                         .build()));
     }
 
-    /** [API] : 특정 ChattingRoom에 새로운 메세지 도착 여부 확인 기능 (Polling) */
+    /** [API 17] : 특정 ChattingRoom에 새로운 메세지 도착 여부 확인 기능 (Polling) */
 
     @GetMapping("/chat/content/new")
     public ApiResponse<NewContentDto> isNewMessage(@RequestAttribute Long memberId,
@@ -99,7 +99,7 @@ public class ChattingController {
     }
 
 
-    /** [API] : 상대방이 어디까지 메세지를 읽었는지를 확인하는 기능 */
+    /** [API 18] : 상대방이 어디까지 메세지를 읽었는지를 확인하는 기능 */
     @GetMapping("/chat/content/last")
     public ApiResponse<LastReadDto> getLastReadContentId(@ModelAttribute LastReadRequest lastReadRequest){
         return ApiResponse.success(chattingRoomService
@@ -107,8 +107,8 @@ public class ChattingController {
     }
 
 
-    /** [API] : 로그인 직후 , 해당 사용자가 참여하고 있는 모든 ChattingRoom의 정보를 조회하고 , 각 Room에 새로운 메세지가 왔는지의 여부를 확인*/
-    @GetMapping("/chat/initInfo")
+    /** [API 19] : 로그인 직후 , 해당 사용자가 참여하고 있는 모든 ChattingRoom의 정보를 조회하고 , 각 Room에 새로운 메세지가 왔는지의 여부를 확인*/
+    @GetMapping("/chat/initinfo")
     public ApiResponse<InitInfoDto> getAllChatInfo(@RequestAttribute Long memberId){
         return ApiResponse.success(chattingRoomService.getChatInitInfo(memberId));
     }

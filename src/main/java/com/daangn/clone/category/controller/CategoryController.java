@@ -17,7 +17,7 @@ public class CategoryController {
     private final CategoryService categoryService;
 
 
-    /** [API] */
+    /** [API 6.] : 모든 카테고리 조회 */
     @GetMapping("/category/all")
     public ApiResponse<List<CategoryDto>> getCategoryAll(){
 

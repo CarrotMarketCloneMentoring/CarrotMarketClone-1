@@ -15,7 +15,7 @@ public class TownController {
     private final TownService townService;
 
 
-    /** [API.3] : 모든 town 조회 */
+    /** [API.5] : 모든 town 조회 */
     @GetMapping("/town/all")
     public ApiResponse<List<TownDto>> getAllTown(){
         return ApiResponse.success(townService.getAllTown());

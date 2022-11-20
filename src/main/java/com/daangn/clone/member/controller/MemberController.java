@@ -22,6 +22,7 @@ public class MemberController {
     private final MemberService memberService;
     private final AES128 aes128;
 
+    /** 테스트를 위한 비밀번호 암호화 controller */
     @GetMapping("/aes128")
     ApiResponse<String> convertAes128(@RequestParam String password){
         return ApiResponse.success(aes128.encrypt(password));
