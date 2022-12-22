@@ -2,12 +2,13 @@ package com.daangn.clone.member.controller;
 
 import com.daangn.clone.common.response.ApiResponse;
 import com.daangn.clone.encryption.AES128;
+import com.daangn.clone.encryption.AES256;
 import com.daangn.clone.member.dto.login.LoginMemberDto;
 import com.daangn.clone.member.dto.login.LoginRequest;
 import com.daangn.clone.member.dto.nickname.NicknameRequest;
 import com.daangn.clone.member.dto.signup.SignUpRequest;
-import com.daangn.clone.member.dto.signup.SignUpRequestDto;
-import com.daangn.clone.member.dto.signup.SignUpResponseDto;
+import com.daangn.clone.member.dto.signup.SignUpParameterDto;
+import com.daangn.clone.member.dto.signup.SignUpResultDto;
 import com.daangn.clone.member.dto.username.UsernameRequest;
 import com.daangn.clone.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
@@ -20,12 +21,12 @@ import org.springframework.web.bind.annotation.*;
 public class MemberController {
 
     private final MemberService memberService;
-    private final AES128 aes128;
+    private final AES256 aes256;
 
     /** 테스트를 위한 비밀번호 암호화 controller */
-    @GetMapping("/aes128")
+    @GetMapping("/aes256")
     ApiResponse<String> convertAes128(@RequestParam String password){
-        return ApiResponse.success(aes128.encrypt(password));
+        return ApiResponse.success(aes256.encrypt(password));
     }
 
     /** [API.1] : username 중복성 검사 */
@@ -42,9 +43,9 @@ public class MemberController {
 
     /** [API.3] : 회원가입 */
     @PostMapping("/signup")
-    public ApiResponse<SignUpResponseDto> signUp(@Validated @RequestBody SignUpRequest signUpRequest){
+    public ApiResponse<SignUpResultDto> signUp(@Validated @RequestBody SignUpRequest signUpRequest){
 
-        SignUpRequestDto signUpRequestDto = SignUpRequestDto.builder()
+        SignUpParameterDto signUpParameterDto = SignUpParameterDto.builder()
                 .username(signUpRequest.getUsername())
                 .encryptPassword(signUpRequest.getEncryptPassword())
                 .nickname(signUpRequest.getNickname())
@@ -52,7 +53,7 @@ public class MemberController {
                 .build();
 
 
-        return ApiResponse.success(memberService.signUp(signUpRequestDto));
+        return ApiResponse.success(memberService.signUp(signUpParameterDto));
     }
 
     /** [API.4] : 로그인 */

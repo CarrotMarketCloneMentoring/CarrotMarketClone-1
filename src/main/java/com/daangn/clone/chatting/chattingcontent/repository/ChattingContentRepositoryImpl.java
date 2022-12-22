@@ -8,7 +8,8 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import javax.persistence.EntityManager;
 import java.util.List;
 
-import static com.daangn.clone.chattingcontent.QChattingContent.chattingContent;
+import static com.daangn.clone.chatting.chattingcontent.QChattingContent.chattingContent;
+
 
 public class ChattingContentRepositoryImpl implements ChattingContentRepositoryCustom{
 
@@ -19,13 +20,11 @@ public class ChattingContentRepositoryImpl implements ChattingContentRepositoryC
     }
 
     @Override
-    public List<ChattingContent> findNotReadMessage(Long chattingRoomId, Long lastReadContentId,
-                                                    OrderSpecifier orderSpecifier, int offset, int limit) {
+    public List<ChattingContent> findNotReadMessage(Long chattingRoomId, Long lastReadContentId, int limit) {
         return queryFactory
                 .selectFrom(chattingContent)
                 .where(chattingRoomIdEq(chattingRoomId), lastReadContentIdOver(lastReadContentId))
-                .orderBy(orderSpecifier)
-                .offset(offset * limit)
+                .orderBy(chattingContent.createdAt.asc())
                 .limit(limit)
                 .fetch();
     }

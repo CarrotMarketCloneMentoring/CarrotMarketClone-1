@@ -7,13 +7,11 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ChattingDto {
-
     private Long memberId;
     private Long targetMemberId;
     private Long itemId;
     private Long chattingRoomId;
     private Long chattingMemberId;
     private Long targetChattingMemberId;
-
 
 }

@@ -7,7 +7,7 @@ import com.daangn.clone.common.enums.ItemStatus;
 import com.daangn.clone.common.enums.Role;
 import com.daangn.clone.common.response.ApiException;
 import com.daangn.clone.common.response.ApiResponseStatus;
-import com.daangn.clone.encryption.AES128;
+import com.daangn.clone.encryption.AES256;
 import com.daangn.clone.file.FileServiceUtil;
 import com.daangn.clone.item.Item;
 import com.daangn.clone.item.dto.*;
@@ -59,7 +59,7 @@ public class ItemService{
     private final ChattingRoomRepository chattingRoomRepository;
 
     private final FileServiceUtil fileServiceUtil;
-    private final AES128 aes128;
+    private final AES256 aes256;
 
 
 
@@ -90,7 +90,7 @@ public class ItemService{
         // 단 이때 상품 이미지가 저장된 로컬 경로는 , AES128로 암호화 한후 -> URL에서 인삭하지 못하는 특수문자들을 한번 더 인코딩한 후 -> 보낸다.
         // -> 예를들어 +라는 문자를 %2B로 인코딩 해서 보내야 - 그 %2B 가 url로써 네트워크를 타고 넘어왔을 때 + 로 바뀐다 (아마 이런게 URL인코딩의미) (그런데도 만약 여기서 이미 +로 변한 결과를 또 URL 디코딩 하면 문제!)
 
-        List<String> encrpytedPathList = fileServiceUtil.getEncryptedPathList(item, sampleDir, aes128);
+        List<String> encrpytedPathList = fileServiceUtil.getEncryptedPathList(item, sampleDir, aes256);
 
         return ItemDto.builder()
                 .itemeId(item.getId())
@@ -122,7 +122,7 @@ public class ItemService{
 
         //0. 유효성 검사 : 설정한 townId가 , 그 사용자가 속한 town과 관련된 town의 Id 인지 검사
         /** 실제 당근마켓에서는 여러 town들이 설정될 수 있지만, 여기서는 사용자와 Item모두 하나의 town에 속한다는 가정 */
-        if(memberRepository.findByMemberId(memberId).getTown().getId() != townId){
+        if(memberRepository.findOne(memberId).getTown().getId() != townId){
             throw new ApiException(FAIL_GET_ITEM_LIST, "상품 목록을 가져올 town이 , 사용자가 속한 town과 다른 town으로 요청이 들어왔습니다.");
         }
 
@@ -146,7 +146,7 @@ public class ItemService{
         return itemList.stream().map(i -> ItemSummaryDto.builder()
                 .itemId(i.getId()).title(i.getTitle()).townName(i.getTown().getName()).createdAt(i.getCreatedAt())
                 .price(i.getPrice())
-                        .itemImageUrl(fileServiceUtil.getEncryptedPathList(i, sampleDir, aes128).get(0))
+                        .itemImageUrl(fileServiceUtil.getEncryptedPathList(i, sampleDir, aes256).get(0))
                 .numOfWish(i.getWishList().size()).numOfChattingRoomList(i.getChattingRoomList().size()).build())
                 .collect(Collectors.toList());
         //return itemSummaryDtoList;
@@ -157,7 +157,7 @@ public class ItemService{
 
        /** 단 , 복호화 이후 실제 상품과 관련되었는지의 추가검사는 할 필요가 없다 - 매우 희박한 가능성이면서 ,
         *  뚫린다고 해도 어차피 open된 이미지 이니 큰 문제가 되지 x */
-        return fileServiceUtil.getImage(encryptedPath, aes128);
+        return fileServiceUtil.getImage(encryptedPath, aes256);
     }
 
 
@@ -182,7 +182,7 @@ public class ItemService{
         //3. townId에 대한 유효성 검사 (만약 살제 당근마켓처럼 사용자가 여러 town에 속하게 된다면, 이게 같지 않냐로 비교하는게 아니라 -> 속하지 않는걸로 비교)
         /** 참고로 굳이 townRepository에서 townId가 유효한 아이디 인지 확인할 필요가 없는게 , 어차피 SellerMember의 Town의 ID라면 유효한 값일 것이기 떄문에
          * 먼저 townId가 유효한 아이디 인지를 검사하고 나중에 그 Member의 townId임을 검사한다면 -> 이는 사실상 중복검사다 */
-        if(memberRepository.findByMemberId(memberId).getTown().getId() != townId){
+        if(memberRepository.findOne(memberId).getTown().getId() != townId){
             throw new ApiException(ApiResponseStatus.FAIL_REGISTER_ITEM, "townId = " + townId + " , 유효하지 않은 townId 값이 들어왔기 때문에, 상품 등록에 실패했습니다.");
         }
 
@@ -198,7 +198,7 @@ public class ItemService{
         checkRegister(registerItemDto.getImageList(), registerItemDto.getCategoryId(), registerItemDto.getTownId(), memberId);
 
         //1. 인자로 넘어온 유효한 값들을 기반으로 Item 엔티티 , ItemImage 엔티티를 생성하여 DB에 먼저 저장 (DB 작업을 먼저 수행해야 함이 핵심)
-        Member sellerMember = memberRepository.findByMemberId(memberId);
+        Member sellerMember = memberRepository.findOne(memberId);
 
         Item item = createItem(registerItemDto, sellerMember);
         itemRepository.save(item);

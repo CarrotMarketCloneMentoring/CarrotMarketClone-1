@@ -19,17 +19,12 @@ public interface ChattingContentRepository extends JpaRepository<ChattingContent
     @Query("select cc from ChattingContent cc where cc.chattingRoom.id=:chattingRoomId ORDER BY cc.createdAt DESC")
     List<ChattingContent> findNewContent(@Param("chattingRoomId") Long chattingRoomId);
 
-    Boolean existsByIdAfter(Long id);
 
-    @Query("select count(cc) from ChattingContent cc where cc.chattingRoom.id=:chattingRoomId " +
-            "and cc.targetMemberId=:targetMemberId and cc.id > :lastChattingContentId")
-    Integer findNewMessageCount(@Param("chattingRoomId") Long chattingRoomId, @Param("targetMemberId") Long targetMemberId,
-                                @Param("lastChattingContentId") Long lastChattingContentId);
 
 
     /**------------------------------------------------------------------------------------------------------------ */
 
-    boolean existsByChattingRoomIdAndTargetMemberIdAndIdAfter(Long  chattingRoomId, Long targetMemberId, Long id);
+
 
     boolean existsByChattingRoomIdAndIdAfter(Long chattingRoomId, Long id);
 

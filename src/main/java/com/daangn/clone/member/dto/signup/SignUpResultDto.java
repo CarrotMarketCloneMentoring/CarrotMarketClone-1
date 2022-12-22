@@ -6,7 +6,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SignUpResponseDto {
+public class SignUpResultDto {
 
     private Long memberId;
     private String username;

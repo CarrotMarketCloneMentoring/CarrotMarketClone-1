@@ -13,7 +13,7 @@ public class ChattingContentDto {
     private Long chattingContentId;
     private Long chattingRoomId;
     private String content;
-    private Long targetMemberId;
+    private Long senderMemberId;
     private LocalDateTime createdAt;
 
 }

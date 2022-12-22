@@ -3,6 +3,7 @@ package com.daangn.clone.file;
 import com.daangn.clone.common.response.ApiException;
 import com.daangn.clone.common.response.ApiResponseStatus;
 import com.daangn.clone.encryption.AES128;
+import com.daangn.clone.encryption.AES256;
 import com.daangn.clone.item.Item;
 import com.daangn.clone.item.dto.RegisterItemDto;
 import org.apache.commons.collections4.CollectionUtils;
@@ -29,10 +30,10 @@ import java.util.stream.Collectors;
 public class FileServiceUtil {
 
     /** 인자로 넘어온 암호화된 이미지를 복호화 한 후 -> 그 경로에 저장된 이미지를 읽어와 응답으로 리턴 */
-    public InputStreamResource getImage(String encryptedPath, AES128 aes128){
+    public InputStreamResource getImage(String encryptedPath, AES256 aes256){
 
         // 1. 일단 url로 넘어온(현재 이상태는 AES128로 막 암호화한 결과와 같음 주의) 경로를 AES128 복호화 하여 원본 경로로 변환해야 함
-        String originalPath = aes128.decrypt(encryptedPath);
+        String originalPath = aes256.decrypt(encryptedPath);
 
         //2. 이제 얻게된 이미지의 원본 경로에서 이미지를 Read 하여 응답으로 보냄
         /** read할 파일과 연결된 InputStream을 인자로 받은 InputStreamResource를 HTTP응답으로 넘기면,
@@ -47,18 +48,18 @@ public class FileServiceUtil {
     }
 
     /** 인자로 넘어온 상품 이미지 경로를 암호화 하여 , 암호화된 경로 리스트를 넘기는 서비스 */
-    public List<String> getEncryptedPathList(Item item, String sampleDir, AES128 aes128){
+    public List<String> getEncryptedPathList(Item item, String sampleDir, AES256 aes256){
 
         //i) 함께 저장된 상품 이미지가 없으면 -> 샘플 이미지의 경로를 암호화 하여 보냄
         if(CollectionUtils.isEmpty(item.getItemImageList())){
-            String encryptedPath = aes128.encrypt(sampleDir);
+            String encryptedPath = aes256.encrypt(sampleDir);
             String finalEncodingPath = URLEncoder.encode(encryptedPath, StandardCharsets.UTF_8);
             return List.of(finalEncodingPath);
         }
 
         // ii) 그렇지 않고 함께 저장된 상품 이미지가 한장이라도 있으면 -> 그 상품 이미지 경로를 암호화 하여 보냄
         return item.getItemImageList().stream()
-                .map(ii -> aes128.encrypt(ii.getPath()))
+                .map(ii -> aes256.encrypt(ii.getPath()))
                 .map(e -> URLEncoder.encode(e, StandardCharsets.UTF_8))
                 .collect(Collectors.toList());
     }

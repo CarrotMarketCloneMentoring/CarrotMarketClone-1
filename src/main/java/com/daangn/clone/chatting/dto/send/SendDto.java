@@ -10,6 +10,5 @@ import lombok.*;
 public class SendDto {
 
     private Long chattingRoomId;
-    private Long targetMemberId;
     private String content;
 }
