@@ -7,6 +7,5 @@ import java.util.List;
 
 public interface ChattingContentRepositoryCustom {
 
-    List<ChattingContent> findNotReadMessage(Long chattingRoomId, Long lastReadContentId,
-                                             OrderSpecifier orderSpecifier, int offset, int limit);
+    List<ChattingContent> findNotReadMessage(Long chattingRoomId, Long lastReadContentId, int limit);
 }

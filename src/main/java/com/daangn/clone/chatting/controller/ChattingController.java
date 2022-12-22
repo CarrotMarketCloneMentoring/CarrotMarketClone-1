@@ -60,58 +60,44 @@ public class ChattingController {
     }
 
     /**
-     * [API 15] : 특정 ChattingRoom의 특정 targetMember에게 메세지를 보내는 기능
+     * [API 15] : 메세지를 보내고자 하는 senderMember가 특정 ChattingRoom에 메세지를 보내는 기능
+     *           (어차피 Room 안에서는 1:1 이니까, target 명시할 필요 x)
      * */
     @PostMapping("/chat/content")
     public ApiResponse<ChattingContentDto> postChattingContent(@RequestAttribute Long memberId,
                                                                @Validated @RequestBody SendRequest sendRequest){
         return ApiResponse.success(chattingRoomService.sendMessage(memberId,
-                SendDto.builder()
-                        .chattingRoomId(sendRequest.getChattingRoomId())
-                        .targetMemberId(sendRequest.getTargetMemberId())
-                        .content(sendRequest.getContent())
-                        .build()));
+                                    sendRequest.getChattingRoomId(), sendRequest.getContent()));
     }
 
     /**
-     * [API 16] : 특정 ChattingRoom에 참여중인 특정 targetMember에게 온 메세지를 넘겨주는 기능 (즉 메세지 수신)
-     * => 이때 넘겨주는 메세지는 , 해당 targetMember가 마지막으로 읽은 메세지 이후로 온 메세지를 전부 넘겨준다
+     * [API 16] : 특정 ChattingRoom에 참여중인 Member가 읽지 않은 메세지를 모두 가져오는 기능
+     * * => 이때 가져오는 메세지는 , 요청하는 Member가 마지막으로 읽은 메세지 이후로 온 메세지를 전부 넘겨준다
+     *   => 그리고 이때의 메세지는 lastReadContentId 이후로 온 Content들을 , createdAt 기준 오름차순 정렬하여 - 넘겨준다
+     *   => 이때 , 새로운 메세지가 없다면 어차피 빈 배열이 넘어가니깐 - 차라리 이걸로 polling 수행!
      * */
 
-    @PatchMapping("/chat/content")
+    @GetMapping("/chat/content")
     public ApiResponse<List<ChattingContentDto>> getChattingContent(@RequestAttribute Long memberId,
-                                                            @Validated @RequestBody ReceiveRequest receiveRequest){
+                                                                    @Validated @RequestBody ReceiveRequest receiveRequest){
         return ApiResponse.success(chattingRoomService.receiveMessage(memberId,
-                ReceiveDto.builder()
+                        ReceiveDto.builder()
                         .chattingRoomId(receiveRequest.getChattingRoomId())
                         .lastReadContentId(receiveRequest.getLastReadContentId())
-                        .page(receiveRequest.getPage())
                         .limit(receiveRequest.getLimit())
                         .build()));
     }
 
-    /** [API 17] : 특정 ChattingRoom에 새로운 메세지 도착 여부 확인 기능 (Polling) */
-
-    @GetMapping("/chat/content/new")
-    public ApiResponse<NewContentDto> isNewMessage(@RequestAttribute Long memberId,
-                                                   @ModelAttribute NewContentRequest newContentRequest){
-        return ApiResponse.success(chattingRoomService.isNewMessage(memberId, newContentRequest.getChattingRoomId()));
-    }
 
 
-    /** [API 18] : 상대방이 어디까지 메세지를 읽었는지를 확인하는 기능 */
+    /** [API 17] : 상대방이 어디까지 메세지를 읽었는지를 확인하는 기능 */
     @GetMapping("/chat/content/last")
-    public ApiResponse<LastReadDto> getLastReadContentId(@ModelAttribute LastReadRequest lastReadRequest){
+    public ApiResponse<LastReadDto> getLastReadContentId(@RequestAttribute Long memberId, @ModelAttribute LastReadRequest lastReadRequest){
         return ApiResponse.success(chattingRoomService
-                .getLastReadContentId(lastReadRequest.getChattingRoomId(), lastReadRequest.getTargetMemberId()));
+                .getLastReadContentId(memberId, lastReadRequest.getChattingRoomId()));
     }
 
 
-    /** [API 19] : 로그인 직후 , 해당 사용자가 참여하고 있는 모든 ChattingRoom의 정보를 조회하고 , 각 Room에 새로운 메세지가 왔는지의 여부를 확인*/
-    @GetMapping("/chat/initinfo")
-    public ApiResponse<InitInfoDto> getAllChatInfo(@RequestAttribute Long memberId){
-        return ApiResponse.success(chattingRoomService.getChatInitInfo(memberId));
-    }
 
 
 

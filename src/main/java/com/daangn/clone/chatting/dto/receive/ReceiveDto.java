@@ -11,7 +11,6 @@ public class ReceiveDto {
 
     private Long chattingRoomId;
     private Long lastReadContentId;
-    private int page;
     private int limit;
 
 }

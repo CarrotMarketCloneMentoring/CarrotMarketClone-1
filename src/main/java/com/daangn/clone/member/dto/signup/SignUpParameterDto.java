@@ -1,16 +1,12 @@
 package com.daangn.clone.member.dto.signup;
 
 import lombok.*;
-import org.hibernate.validator.constraints.Length;
-
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
 
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SignUpRequestDto {
+public class SignUpParameterDto {
 
     private String username;
 

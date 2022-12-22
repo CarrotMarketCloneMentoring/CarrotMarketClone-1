@@ -4,14 +4,10 @@ import com.daangn.clone.common.enums.DelYn;
 import com.daangn.clone.common.enums.ItemStatus;
 import com.daangn.clone.item.Item;
 import com.daangn.clone.item.dto.paging.ItemSummaryDto;
-import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import org.hibernate.procedure.spi.ParameterRegistrationImplementor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Pageable;
 
 import javax.persistence.EntityManager;
 import java.util.List;

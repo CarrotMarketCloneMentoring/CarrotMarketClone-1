@@ -27,8 +27,8 @@ public class ChattingContent extends BasicEntity{
     @Column(name = "chatting_room_id")
     private Long chattingRoomId;
 
-    @Column(name = "target_member_id")
-    private Long targetMemberId;
+    @Column(name = "sender_member_Id")
+    private Long senderMemberId;
 
 
 

@@ -26,6 +26,7 @@ public class Member extends BasicEntity {
     private Long id;
 
     private String username;
+    /** 결국 이 password 필드는 절대 원본 비밀번호가 들어가지 않고 , 해쉬화된 비밀번호가 들어가는 필드라는 점을 명심해야 함 !!! */
     private String password;
     private String nickname;
 

@@ -29,7 +29,8 @@ public interface ItemRepository extends JpaRepository<Item, Long> , ItemReposito
      * ChattingRoomList까지 같이 조회하려고 하면 -> 오히려 inner join의 결과 row 가 없게 되어 에러가 터진다.
      * => 따라서 반드시 존재한다고 보장되는 SellerMember를 제외하고는 fetch join을 하지 않아야 한다. */
     @Query("select i from Item i join fetch i.sellerMember m  where i.id = :id")
-    Optional<Item> findItem(@Param("id") Long id);
+    Optional<Item> findOneWithSellerMember(@Param("id") Long id);
+
 
     @Query("select distinct i from Item i join fetch i.itemImageList where i.id = :id")
     Optional<Item> findItemWithImages(@Param("id") Long id);
