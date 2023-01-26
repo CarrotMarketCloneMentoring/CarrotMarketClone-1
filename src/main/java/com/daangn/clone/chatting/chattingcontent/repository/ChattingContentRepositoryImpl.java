@@ -1,6 +1,9 @@
 package com.daangn.clone.chatting.chattingcontent.repository;
 
 import com.daangn.clone.chatting.chattingcontent.ChattingContent;
+import com.daangn.clone.chatting.chattingcontent.QChattingContent;
+import com.daangn.clone.chatting.dto.ChattingContentDto;
+import com.daangn.clone.chatting.dto.QChattingContentDto;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -20,9 +23,10 @@ public class ChattingContentRepositoryImpl implements ChattingContentRepositoryC
     }
 
     @Override
-    public List<ChattingContent> findNotReadMessage(Long chattingRoomId, Long lastReadContentId, int limit) {
+    public List<ChattingContentDto> findByChattingRoomIdAndLastReadContentIdOver(Long chattingRoomId, Long lastReadContentId, int limit) {
         return queryFactory
-                .selectFrom(chattingContent)
+                .select(new QChattingContentDto(chattingContent.id, chattingContent.chattingRoom.id, chattingContent.content, chattingContent.senderMemberId, chattingContent.createdAt))
+                .from(chattingContent)
                 .where(chattingRoomIdEq(chattingRoomId), lastReadContentIdOver(lastReadContentId))
                 .orderBy(chattingContent.createdAt.asc())
                 .limit(limit)

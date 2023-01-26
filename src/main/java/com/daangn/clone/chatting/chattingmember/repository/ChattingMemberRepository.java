@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ChattingMemberRepository extends JpaRepository<ChattingMember, Long> {
 
@@ -16,7 +17,7 @@ public interface ChattingMemberRepository extends JpaRepository<ChattingMember, 
     @Query("select mc from ChattingMember mc join fetch mc.chattingRoom where mc.member.id=:memberId and mc.role=:role")
     List<ChattingMember> findAllWithChattingRoom(@Param("memberId") Long memberId, @Param("role")Role role);
 
-    ChattingMember findByChattingRoomIdAndMemberId(Long chattingRoomId, Long memberId);
+    Optional<ChattingMember> findByChattingRoomIdAndMemberId(Long chattingRoomId, Long memberId);
 
     boolean existsByChattingRoomIdAndMemberIdAndRole(Long chattingRoomId, Long memberId, Role role);
 

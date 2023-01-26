@@ -66,6 +66,9 @@ public enum ApiResponseStatus {
     INVALID_JWT_TOKEN(false, 2012, "인증 인가를 위한 jwt token값이 유효하지 않습니다."),
     INVALID_TOWN_NAME(false, 2013, "유효하지 않는 행정동 입니다"),
     INVALID_CHATTING_ROOM(false, 2021, "로컬에 저장된 채팅룸 데이터는 잘못된 데이터 입니다."),
+    INVALID_CHATTING_ROOM_ID(false, 2022, "채팅룸 아이디가 유효하지 않습니다."),
+    INVALID_CHATTING_MEMBER(false, 2023, "유효한 채팅 멤버 엔티티가 아닙니다."),
+    NOT_EXIST_CHATTING_ROOM(false,2024, "해당 멤버가 해당 채팅룸에 소속되어있지 않습니다."),
 
     NESTED_USERNAME(false, 2101, "이미 사용중인 아이디 입니다."),
     NESTED_NICKNAME(false, 2102, "이미 사용중인 닉네임 입니다."),

@@ -11,7 +11,7 @@ public class ChattingDto {
     private Long targetMemberId;
     private Long itemId;
     private Long chattingRoomId;
-    private Long chattingMemberId;
-    private Long targetChattingMemberId;
+//    private Long chattingMemberId;
+//    private Long targetChattingMemberId;
 
 }

@@ -11,8 +11,7 @@ import com.daangn.clone.encryption.AES256;
 import com.daangn.clone.file.FileServiceUtil;
 import com.daangn.clone.item.Item;
 import com.daangn.clone.item.dto.*;
-import com.daangn.clone.item.dto.paging.ItemSummaryDto;
-import com.daangn.clone.item.dto.paging.SortCriteria;
+import com.daangn.clone.item.dto.paging.*;
 import com.daangn.clone.item.repository.ItemRepository;
 import com.daangn.clone.itemimage.ItemImage;
 import com.daangn.clone.itemimage.repository.ItemImageRepository;
@@ -26,6 +25,8 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -55,9 +56,7 @@ public class ItemService{
     private final ItemImageRepository itemImageRepository;
     private final CategoryRepository categoryRepository;
     private final MemberRepository memberRepository;
-    private final TownRepository townRepository;
     private final ChattingRoomRepository chattingRoomRepository;
-
     private final FileServiceUtil fileServiceUtil;
     private final AES256 aes256;
 
@@ -70,6 +69,17 @@ public class ItemService{
     /**
      * [조회]
      * */
+
+    /** <특정 Member 조회 - JWT를 복호화 해서 얻은 memberId로! > */
+    private Member getMember(Long memberId){
+        Member findMember = memberRepository.findById(memberId).orElseThrow(
+                () -> {
+                    throw new ApiException(ApiResponseStatus.INVALID_MEMBER, "JWT를 복호화 한 memberId로 Member를 조회했음에도 , Member를 조회할 수 없습니다.");
+                }
+        );
+
+        return findMember;
+    }
 
     /** <특정 아이템 조회> */
     @Transactional
@@ -114,15 +124,15 @@ public class ItemService{
 
 
     /** <아이템 목록 조회> */
-    public List<ItemSummaryDto> getItemList(Long memberId,
-                                            int page, int limit,
-                                            Long townId,
-                                            SortCriteria sortCriteria,
-                                            Long categoryId, ItemStatus itemStatus){
+    public ItemSummaryPageDto getItemList(Long memberId,
+                                          Long townId,
+                                          Long categoryId, ItemStatus itemStatus,
+                                          SortCriteria sortCriteria,
+                                          Pageable pageable){
 
         //0. 유효성 검사 : 설정한 townId가 , 그 사용자가 속한 town과 관련된 town의 Id 인지 검사
         /** 실제 당근마켓에서는 여러 town들이 설정될 수 있지만, 여기서는 사용자와 Item모두 하나의 town에 속한다는 가정 */
-        if(memberRepository.findOne(memberId).getTown().getId() != townId){
+        if(getMember(memberId).getTown().getId() != townId){
             throw new ApiException(FAIL_GET_ITEM_LIST, "상품 목록을 가져올 town이 , 사용자가 속한 town과 다른 town으로 요청이 들어왔습니다.");
         }
 
@@ -130,26 +140,30 @@ public class ItemService{
         //1. 이후 조건에 따른 페이징을 수행하여 - 조회된 ItemSummaryDto 들을 반환
         /** 그냥 순수 Item으로 조회하면 , Item의 필드 중 , content 필드도 함꼐 조회해오는데 , 이게 양이 어마어마할 수 있음.
          * 따라서 DB에 무리가 가는 작업을 막기 위해 , ItemSummaryDto에 필요한 컬럼만 추출하는 [DTO로 조회하기] 를 사용 */
-        List<Item> itemList = itemRepository.searchItems(townId,
-                categoryId, itemStatus, sortCriteria.getSpecifier(), page, limit);
+        ItemPageDto itemPageDto = itemRepository.searchItems(townId,
+                categoryId, itemStatus, sortCriteria.getSpecifier(), pageable);
 
-//        List<ItemSummaryDto> itemSummaryDtoList = itemRepository.searchItemSummaryDtos(townId,
-//                categoryId, situation, sortCriteria.getSpecifier(), page, limit);
-
+//        Page<TestDto> pageResult = itemRepository.searchItemSummaryDtos(townId, categoryId, itemStatus, sortCriteria.getSpecifier(), pageable);
+//        List<TestDto> content = pageResult.getContent();
 
         //2_1. 만약 조회한 상품이 하나도 없다면 -> 그에 따른 예외를 터뜨림 (클라이언트는 이 응답 결과를 이용)
-        if(CollectionUtils.isEmpty(itemList)){
+        if(CollectionUtils.isEmpty(itemPageDto.getItemList())){
             throw new ApiException(ApiResponseStatus.NO_ITEMLIST, "더이상 등록된 상품이 없습니다.");
         }
 
-        //2_2. 조회한 상품이 하나라도 있다면 - 조회한 DTO 그 자체를 반환
-        return itemList.stream().map(i -> ItemSummaryDto.builder()
-                .itemId(i.getId()).title(i.getTitle()).townName(i.getTown().getName()).createdAt(i.getCreatedAt())
-                .price(i.getPrice())
+        //2_2. 조회한 상품이 하나라도 있다면 - 조회한 Entity들을 Dto로 변환하여 반환
+        List<ItemSummaryDto> itemSummaryDtoList = itemPageDto.getItemList().stream()
+                .map(i -> ItemSummaryDto.builder()
+                        .itemId(i.getId()).title(i.getTitle()).townName(i.getTown().getName()).createdAt(i.getCreatedAt())
+                        .price(i.getPrice())
                         .itemImageUrl(fileServiceUtil.getEncryptedPathList(i, sampleDir, aes256).get(0))
-                .numOfWish(i.getWishList().size()).numOfChattingRoomList(i.getChattingRoomList().size()).build())
+                        .numOfWish(i.getWishList().size()).numOfChattingRoomList(i.getChattingRoomList().size()).build())
                 .collect(Collectors.toList());
-        //return itemSummaryDtoList;
+
+        return ItemSummaryPageDto.builder()
+                .itemSummaryDtoList(itemSummaryDtoList)
+                .totalCount(itemPageDto.getTotalCount())
+                .build();
     }
 
     /** <특정 Path의 이미지 조회> */
@@ -167,7 +181,7 @@ public class ItemService{
     private void checkRegister(List<MultipartFile> files, Long categoryId, Long townId, Long memberId){
 
        //1. 사진 확장자에 대한 유효성 검사
-        if(fileServiceUtil.checkExtension(files)==false){
+        if(!fileServiceUtil.checkExtension(files)){
             throw new IllegalArgumentException(
                     files.stream()
                             .map(f -> FilenameUtils.getExtension(f.getOriginalFilename())).collect(Collectors.toList()).toString()
@@ -175,14 +189,14 @@ public class ItemService{
         }
 
         //2. categortyId에 대한 유효성 검사
-        if(categoryRepository.existsById(categoryId)==false){
+        if(!categoryRepository.existsById(categoryId)){
             throw new ApiException(ApiResponseStatus.FAIL_REGISTER_ITEM, "categoryId = " + categoryId + " , 유효하지 않은 categoryId 값이 들어왔기 때문에, 상품 등록에 실패했습니다.");
         }
 
         //3. townId에 대한 유효성 검사 (만약 살제 당근마켓처럼 사용자가 여러 town에 속하게 된다면, 이게 같지 않냐로 비교하는게 아니라 -> 속하지 않는걸로 비교)
         /** 참고로 굳이 townRepository에서 townId가 유효한 아이디 인지 확인할 필요가 없는게 , 어차피 SellerMember의 Town의 ID라면 유효한 값일 것이기 떄문에
          * 먼저 townId가 유효한 아이디 인지를 검사하고 나중에 그 Member의 townId임을 검사한다면 -> 이는 사실상 중복검사다 */
-        if(memberRepository.findOne(memberId).getTown().getId() != townId){
+        if(getMember(memberId).getTown().getId() != townId){
             throw new ApiException(ApiResponseStatus.FAIL_REGISTER_ITEM, "townId = " + townId + " , 유효하지 않은 townId 값이 들어왔기 때문에, 상품 등록에 실패했습니다.");
         }
 
@@ -194,11 +208,12 @@ public class ItemService{
     @Transactional
     public Long register(Long memberId, RegisterItemDto registerItemDto){
 
+
         //0. 인자로 넘어온 값들의 유효성 검증
         checkRegister(registerItemDto.getImageList(), registerItemDto.getCategoryId(), registerItemDto.getTownId(), memberId);
 
         //1. 인자로 넘어온 유효한 값들을 기반으로 Item 엔티티 , ItemImage 엔티티를 생성하여 DB에 먼저 저장 (DB 작업을 먼저 수행해야 함이 핵심)
-        Member sellerMember = memberRepository.findOne(memberId);
+        Member sellerMember = getMember(memberId);
 
         Item item = createItem(registerItemDto, sellerMember);
         itemRepository.save(item);
@@ -264,7 +279,7 @@ public class ItemService{
         );
 
         if(item.getSellerMember().getId()!=memberId){
-            throw new ApiException(ApiResponseStatus.INVALID_ITEM_ID, "EXPECTED_BUYERS 조회시 : 해당 상품이 , 해당 username의 Member가 올린 상품이 아닙니다.");
+            throw new ApiException(ApiResponseStatus.INVALID_ITEM_ID, "EXPECTED_BUYERS 조회시 : 해당 상품이 , 해당 memberId의 Member가 올린 상품이 아닙니다.");
         }
     }
 
@@ -390,7 +405,7 @@ public class ItemService{
         // 예약중에서 -> 판매완료로 변경하는 경우는 , 그 Member가 같아야 하고 (즉 같지 않으면 예외)
         // 판매중에서 -> 거래완료로 변경하는 경우는 , 채팅을 건 EXPECTED_BUYERS 들 중에 하나여야 한다. (즉 이들중 한명이 아니면 예외)
         else if(item.getItemStatus()==RESERVED && buyerMemberId!=item.getBuyer_member_id()){
-            throw new ApiException(ApiResponseStatus.FAIL_CHANGE_TO_SOLD_OUT, "판매완료로 변경시 : 예약중에서 변경시에는 예약한 그 사용자에게 자동으로 상품이 판매됩니다. 별도의 판매자를 선택할수 없습니다. ");
+            throw new ApiException(ApiResponseStatus.FAIL_CHANGE_TO_SOLD_OUT, "판매완료로 변경시 : 예약중에서 변경시에는 예약한 그 사용자에게만 자동으로 상품이 판매됩니다. 별도의 판매자를 선택할수 없습니다. ");
         }
         else if(item.getItemStatus()==FOR_SALE && !CollectionUtils.containsAny(getBuyerIdList(item), buyerMemberId)){
             throw new ApiException(ApiResponseStatus.FAIL_CHANGE_TO_SOLD_OUT, "판매완료로 변경시 : 판매중에서 변경시에는, 채팅을 시도한 EXPECTED_BUYER들 중 한명에게만 상품을 판매할 수 있습니다.");

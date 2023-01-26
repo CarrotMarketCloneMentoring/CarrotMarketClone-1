@@ -4,13 +4,17 @@ package com.daangn.clone.item.controller;
 import com.daangn.clone.common.enums.ItemStatus;
 import com.daangn.clone.item.dto.*;
 import com.daangn.clone.item.dto.paging.ItemSummaryDto;
+import com.daangn.clone.item.dto.paging.ItemSummaryPageDto;
 import com.daangn.clone.item.dto.paging.ItemsReq;
+import com.daangn.clone.item.dto.paging.TestDto;
 import com.daangn.clone.item.dto.update.ChangeRequest;
 import com.daangn.clone.item.service.ItemService;
 import com.daangn.clone.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -77,16 +81,17 @@ public class ItemController {
 
     /** [API 10] : 최신 상품 목록 조회 - 페이징 사용 , 이때 어떤 town의 Item을 볼지는 외부 요청에 의해 받는걸로! */
     @GetMapping("/items")
-    public ApiResponse<List<ItemSummaryDto>> getItemList(@RequestAttribute Long memberId,
-                                                         @Validated @ModelAttribute ItemsReq itemsReq){
+    public ApiResponse<ItemSummaryPageDto> getItemList(@RequestAttribute Long memberId,
+                                                       @Validated @ModelAttribute ItemsReq itemsReq,
+                                                       Pageable pageable){
 
          //아이템 목록 조회하여 반환
         return ApiResponse.success(itemService.getItemList(
                 memberId,
-                itemsReq.getPage(), itemsReq.getLimit(),
                 itemsReq.getTownId(),
+                itemsReq.getCategoryId(), itemsReq.getItemStatus(),
                 itemsReq.getSortCriteria(),
-                itemsReq.getCategoryId(), itemsReq.getItemStatus()));
+                pageable));
 
 
     }

@@ -3,15 +3,11 @@ package com.daangn.clone.chatting.controller;
 import com.daangn.clone.chatting.dto.ChattingDto;
 import com.daangn.clone.chatting.dto.ChattingListDto;
 import com.daangn.clone.chatting.dto.bind.BindChattingRequest;
-import com.daangn.clone.chatting.dto.initInfo.InitInfoDto;
 import com.daangn.clone.chatting.dto.last_read.LastReadDto;
 import com.daangn.clone.chatting.dto.last_read.LastReadRequest;
-import com.daangn.clone.chatting.dto.new_content.NewContentDto;
-import com.daangn.clone.chatting.dto.polling.*;
-import com.daangn.clone.chatting.dto.receive.ReceiveDto;
+import com.daangn.clone.chatting.dto.receive.ReceiveParameterDto;
 import com.daangn.clone.chatting.dto.receive.ReceiveRequest;
 import com.daangn.clone.chatting.dto.ChattingContentDto;
-import com.daangn.clone.chatting.dto.send.SendDto;
 import com.daangn.clone.chatting.dto.send.SendRequest;
 import com.daangn.clone.chatting.chattingroom.service.ChattingRoomService;
 import com.daangn.clone.common.response.ApiResponse;
@@ -20,7 +16,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -79,9 +74,9 @@ public class ChattingController {
 
     @GetMapping("/chat/content")
     public ApiResponse<List<ChattingContentDto>> getChattingContent(@RequestAttribute Long memberId,
-                                                                    @Validated @RequestBody ReceiveRequest receiveRequest){
+                                                                    @Validated @ModelAttribute ReceiveRequest receiveRequest){
         return ApiResponse.success(chattingRoomService.receiveMessage(memberId,
-                        ReceiveDto.builder()
+                        ReceiveParameterDto.builder()
                         .chattingRoomId(receiveRequest.getChattingRoomId())
                         .lastReadContentId(receiveRequest.getLastReadContentId())
                         .limit(receiveRequest.getLimit())

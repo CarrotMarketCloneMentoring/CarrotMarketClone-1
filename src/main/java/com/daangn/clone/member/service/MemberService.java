@@ -4,7 +4,6 @@ import com.daangn.clone.common.enums.Status;
 import com.daangn.clone.common.jwt.JwtUtil;
 import com.daangn.clone.common.response.ApiException;
 import com.daangn.clone.common.response.ApiResponseStatus;
-import com.daangn.clone.encryption.AES128;
 import com.daangn.clone.encryption.AES256;
 import com.daangn.clone.encryption.Sha256;
 import com.daangn.clone.member.Member;
@@ -33,22 +32,14 @@ public class MemberService {
 
     public boolean validateUsername(String username){
         /** 주의할 점 : ACTIVE이건 INACTIVE 이건 어쨌든 한번 등록된 username이 아니어야 함 - 즉 상태와 관계 없이! */
-        if(memberRepository.existsByUsername(username)){
-            //throw new ApiException(ApiResponseStatus.NESTED_USERNAME, "회원가입 시점 : 사용하려는 아이디가 이미 사용되고 있는 아이디 입니다.");
-            return false;
-        }
+        return !memberRepository.existsByUsername(username);
 
-        return true;
     }
 
     public boolean validateNickname(String nickname){
         /** 주의할 점 : ACTIVE이건 INACTIVE 이건 어쨌든 한번 등록된 nickname이 아니어야 함 - 즉 상태와 관계 없이! */
-        if(memberRepository.existsByNickname(nickname)){
-            //throw new ApiException(ApiResponseStatus.NESTED_NICKNAME, "회원가입 시점 : 사용하려는 닉네임이 이미 사용되고 있는 닉네임 입니다.");
-            return false;
-        }
+        return !memberRepository.existsByNickname(nickname);
 
-        return true;
     }
 
 
@@ -101,6 +92,7 @@ public class MemberService {
                 .townId(townRepository.findByName(signUpParameterDto.getTownName()))
                 .status(Status.ACTIVE)
                 .build();
+
         memberRepository.save(member);
 
         return SignUpResultDto.builder()
@@ -122,7 +114,7 @@ public class MemberService {
 
         //1. Member를 username과 password로 조회 -> 만약 여기서 예외가 터지면, 아이디 또는 비밀번호가 잘못된것
         /** 단 이때 아이디와 비밀번호의 유효성을 각각 알려주지 않고, 아이디 또는 비밀번호가 잘못되었다고 알려줘야 함*/
-        Member member = memberRepository.findOne(username, hashedPassword).orElseThrow(
+        Member member = memberRepository.findByUsernameAndPassword(username, hashedPassword).orElseThrow(
                 () -> {
                     throw new ApiException(ApiResponseStatus.INVALID_USERNAME_OR_PASSWORD, "로그인 시점 : 아이디 또는 비밀번호가 잘못되었습니다.");
                 }

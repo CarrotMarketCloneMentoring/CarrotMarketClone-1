@@ -15,5 +15,4 @@ public class CloneApplication {
 		SpringApplication.run(CloneApplication.class, args);
 	}
 
-
 }

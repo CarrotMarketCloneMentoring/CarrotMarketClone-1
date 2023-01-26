@@ -28,12 +28,10 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
 
 
-    @Query("select m from Member m where m.id = :memberId")
-    Member findOne(@Param("memberId") Long memberId);
 
     /** status에 관계 없이, 오직 아이디와 비밀번호 만으로 조회 */
     @Query("select m from Member m where m.username=:username and m.password=:password")
-    Optional<Member> findOne(@Param("username")String username, @Param("password") String password);
+    Optional<Member> findByUsernameAndPassword(@Param("username")String username, @Param("password") String password);
 
     /** 가장 최신에 생성된 채팅방이 가장 위에 보이도록 하기 위해 createdAt 값에 대한 DESC */
     @Query("select distinct m from Member m join fetch m.chattingMemberList mc join fetch mc.chattingRoom c where m.id = :memberId order by c.createdAt desc")

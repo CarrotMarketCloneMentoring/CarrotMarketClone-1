@@ -7,7 +7,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ReceiveDto {
+public class ReceiveParameterDto {
 
     private Long chattingRoomId;
     private Long lastReadContentId;

@@ -9,7 +9,7 @@ import com.daangn.clone.chatting.chattingcontent.repository.ChattingContentRepos
 
 import com.daangn.clone.chatting.dto.last_read.LastReadDto;
 import com.daangn.clone.chatting.dto.ChattingContentDto;
-import com.daangn.clone.chatting.dto.receive.ReceiveDto;
+import com.daangn.clone.chatting.dto.receive.ReceiveParameterDto;
 import com.daangn.clone.common.enums.Status;
 import com.daangn.clone.common.response.ApiException;
 import com.daangn.clone.common.response.ApiResponseStatus;
@@ -83,15 +83,13 @@ public class ChattingRoomService {
 
 
     // make 대신에 get이란 용어 사용
-    private ChattingDto getChattingDto(Long buyerMemberId, Long sellerMemberId, Long itemId, Long chattingRoomId, Long buyerId, Long sellerId){
+    private ChattingDto getChattingDto(Long buyerMemberId, Long sellerMemberId, Long itemId, Long chattingRoomId){
 
         return ChattingDto.builder()
                 .memberId(buyerMemberId)
                 .targetMemberId(sellerMemberId)
                 .itemId(itemId)
                 .chattingRoomId(chattingRoomId)
-                .chattingMemberId(buyerId)
-                .targetChattingMemberId(sellerId)
                 .build();
     }
 
@@ -128,8 +126,7 @@ public class ChattingRoomService {
         chattingRoom.setSellerMemberId(sellerMemberId);
         chattingRoom.setBuyerMemberId(buyerMemberId);
 
-        return getChattingDto(buyerMemberId, sellerMemberId, itemId,
-                chattingRoom.getId(), buyer.getId(), seller.getId());
+        return getChattingDto(buyerMemberId, sellerMemberId, itemId, chattingRoom.getId());
     }
 
     /** 이 비지니스 로직은, 무조건 Buyer 만의 입장에서 -> 상품을 보고 구매자가 판매자에게 채팅을 요청하면 -> 그 요청한 채팅을 설정해주는 서비스
@@ -142,7 +139,7 @@ public class ChattingRoomService {
         Item item = getItemWithSellerMember(itemId);
         validateBindChatting(memberId, item);
 
-        Member buyerMember = memberRepository.findOne(memberId);
+        Member buyerMember = getMember(memberId);
 
         /**
          *
@@ -163,10 +160,7 @@ public class ChattingRoomService {
 
         /** (2) 기존에 채팅을 요청했던 경우 */
 
-        ChattingMember buyer = chattingMemberRepository.findByChattingRoomIdAndMemberId(chattingRoom.get().getId(), chattingRoom.get().getBuyerMemberId());
-        ChattingMember seller = chattingMemberRepository.findByChattingRoomIdAndMemberId(chattingRoom.get().getId(), chattingRoom.get().getSellerMemberId());
-        return getChattingDto(buyerMember.getId(), item.getSellerMember().getId(), itemId,
-                chattingRoom.get().getId(), buyer.getId(), seller.getId());
+        return getChattingDto(buyerMember.getId(), item.getSellerMember().getId(), itemId, chattingRoom.get().getId());
 
     }
 
@@ -196,10 +190,6 @@ public class ChattingRoomService {
                             .targetMemberId(cr.getSellerMemberId().equals(memberId) ? cr.getBuyerMemberId() : cr.getSellerMemberId())
                             .itemId(cr.getItem().getId())
                             .chattingRoomId(cr.getId())
-                            .chattingMemberId(chattingMemberRepository.findByChattingRoomIdAndMemberId(cr.getId(), memberId).getId())
-                            .targetChattingMemberId(
-                                    chattingMemberRepository.findByChattingRoomIdAndMemberId(cr.getId(), cr.getSellerMemberId().equals(memberId) ? cr.getBuyerMemberId() : cr.getSellerMemberId()).getId()
-                            )
                             .build())
                     .collect(Collectors.toList());
         }
@@ -231,15 +221,18 @@ public class ChattingRoomService {
     public ChattingContentDto sendMessage(Long memberId, Long chattingRoomId, String content){
 
         //1. 유효성 검사
-        Member sendMember = memberRepository.findOne(memberId);
+        Member sendMember = getMember(memberId);
 
-        // 1_1. 해당 senderMember와 내가 참여하고 있는 해당 chattingRoom이 정발로 존재하는지
-        // "즉 보낼 그 SenderMember가 그 ChattingRoom에 속한게 맞는지!"
-        // (내 API 구현 논리상, 그리고 ERD 논리상 , 이 한방만 검사해주면 됨)
-        existRoomWithMember(chattingRoomId, sendMember.getId());
+        // 1_1. 해당 senderMember와 내가 참여하고 있는 해당 chattingRoom이 정말로 존재하는지
+        // "즉 보낼 그 SenderMember가 그 ChattingRoom에 속한게 맞는지!" 를 확인해야 하는데 ...
+        /** 이때 어차피 ChattingRoom을 생성하면서 , 그 Room에 속할 Member와 Room을 mapping시키는 ChattingMember를 함께 생성하니, 그런 ChattingMember가 있는지를 확인하면 됨*/
+        ChattingMember chattingMember = chattingMemberRepository.findByChattingRoomIdAndMemberId(
+                        chattingRoomId, sendMember.getId())
+                .orElseThrow(
+                        ()->{throw new ApiException(ApiResponseStatus.INVALID_CHATTING_MEMBER, "메세지 전송 시점 : 메세지를 보내고자 하는 Member가 , 메세지를 보내고자 하는 ChattingRoom에 속하지 않은 상태입니다.");}
+                );
 
-
-        //2. 넘어온 정보를 기반으로 ChattingContent 엔티티를 생성하여 insert -> 이 자 체가 곧 메세지 전송 역할
+        //2. 넘어온 정보를 기반으로 ChattingContent 엔티티를 생성하여 insert -> 이 자체가 곧 메세지 전송 역할
         ChattingContent chattingContent = ChattingContent.builder()
                 .chattingRoomId(chattingRoomId)
                 .senderMemberId(sendMember.getId())
@@ -248,8 +241,7 @@ public class ChattingRoomService {
         chattingContentRepository.save(chattingContent);
 
         //3. 내가 보낸 메세지 까지 내가 읽었다고 update (결과적으로 내 메세지든 , 니가 보낸 메세지든 , 나는 어디까지 읽었는지만을 check! )
-        ChattingMember chattingMember = chattingMemberRepository.findByChattingRoomIdAndMemberId(
-                                                                    chattingRoomId, sendMember.getId());
+        /** 실해 논리상 내가 메세지를 보내려면 , "채팅방에 입장하여 이전에 온 메세지들을 다 읽은 후" 니깐 -> 가장 마지막으로 읽은 메세지는 , 지금 내가 보내는 메세지가 된다!! */
         chattingMember.setLastReadContentId(chattingContent.getId());
 
         //4. 내가 보낸 메세지에 대한 정보를 리턴
@@ -263,11 +255,18 @@ public class ChattingRoomService {
     }
 
 
-    private void existRoomWithMember(Long chattingRoomId, Long memberId){
-        if(!chattingMemberRepository.existsByChattingRoomIdAndMemberId(chattingRoomId, memberId)){
-            throw new ApiException(ApiResponseStatus.INVALID_SEND_MESSAGE, "메세지 전송 또는 수신 시점 : 그런 ID를 가진 ChattingRoom  또는 그런 ChattingRoom에 참여하고 있는 targetMember는 존재하지 않습니다.");
-        }
+    private Member getMember(Long memberId){
+        Member findMember = memberRepository.findById(memberId).orElseThrow(
+                () -> {
+                    throw new ApiException(ApiResponseStatus.INVALID_MEMBER, "JWT를 복호화 한 memberId로 Member를 조회했음에도 , Member를 조회할 수 없습니다.");
+                }
+        );
+
+        return findMember;
     }
+
+
+
 
 
 
@@ -275,42 +274,42 @@ public class ChattingRoomService {
 
     /** [메세지 수신 서비스] */
     @Transactional
-    public List<ChattingContentDto> receiveMessage(Long memberId, ReceiveDto receiveDto){
+    public List<ChattingContentDto> receiveMessage(Long memberId, ReceiveParameterDto receiveParameterDto){
 
-        Member receiverMember = memberRepository.findOne(memberId);
+        Member receiverMember = getMember(memberId);
 
         //1. 해당 receiverMember가 참여하고 있는 해당 chattingRoom이 정발로 존재하는지
-        // (내 API 구현 논리상, 그리고 ERD 논리상 , 이 한방만 검사해주면 됨)
-        existRoomWithMember(receiveDto.getChattingRoomId(), receiverMember.getId());
+        // (내 API 구현 논리상, 그리고 ERD 논리상 , 이 한방만 검사해주면 됨 - sendMessage()때와 같은 논리)
+        /** 단, 어차피 receiverChattingMember를 조회해야 하니 , 이를 조회에 성공하면 속하는것으로 판별 ! / 조회에 성공하지 못할 시 , ReceiverMember가 그 Room에 속하지 않는다고 판별! */
 
-        //2_1. 요청에서 함께 넘어온 contentId 이후에 , "그 ChattingRoom에" 온 content가 있는지?
-        // 새로운 메세지가 오지 않은것 이므로 -> 그에 따른 응답을 보내고 끝 (빈 리스트 반환)
+        ChattingMember receiverChattingMember = chattingMemberRepository.findByChattingRoomIdAndMemberId(receiveParameterDto.getChattingRoomId(), receiverMember.getId())
+                .orElseThrow(
+                        () -> {throw new ApiException(ApiResponseStatus.INVALID_CHATTING_MEMBER, "메시지 수신 시점 : 수신할 Member가 그 ChattingRoom에 속해있지 않습니다!");}
+                );
 
-        if(!chattingContentRepository.existsByChattingRoomIdAndIdAfter(
-                receiveDto.getChattingRoomId(), receiveDto.getLastReadContentId())){
-            return new ArrayList<>();
+
+        //2_1. 안읽은 메세지가 있든 or 없든 -> 일단 repository 를 이용하여 조회 -> 이때 조회한 리스트가 비어있으면 바로 리턴
+        // 심지어 아직 읽은 메세지가 없어서 lastReadContentId가 0 이면 -> 0보다 큰 content가 조회되어 리턴된다! (limit 값 만을 사용하여 무한 스크롤)
+        /** [실제로 특정 기기에 존재하는 content 이후로 온 content들을 읽어온은 로직] */
+        List<ChattingContentDto> notReadContentList = chattingContentRepository.findByChattingRoomIdAndLastReadContentIdOver(
+                receiveParameterDto.getChattingRoomId(), receiveParameterDto.getLastReadContentId(),  receiveParameterDto.getLimit());
+
+
+        //2_2. 조회한 결과가 비어있는 경우 -> "그대로" 빈 배열을 반환 (즉 새 메시지가 안온 상황)
+        if(CollectionUtils.isEmpty(notReadContentList)){
+            return notReadContentList;
         }
-
-        //2_2. 그렇지 않다면 , 안읽은 새로운 메세지가 왔다는 것 이므로 -> 그 메세지들을 조회하여 오름차순 정렬하고 보내주면 됨
-        // 심지어 아직 읽은 메세지가 없어서 lastReadContentId가 0 이면 -> 0보다 큰 content가 조회되어 리턴된다! (페이징 처리 수행)
-        List<ChattingContentDto> notReadContentList = chattingContentRepository.findNotReadMessage(
-                receiveDto.getChattingRoomId(), receiveDto.getLastReadContentId(),  receiveDto.getLimit())
-                .stream().map(cc -> ChattingContentDto.builder()
-                        .chattingContentId(cc.getId())
-                        .chattingRoomId(cc.getChattingRoom().getId())
-                        .senderMemberId(cc.getSenderMemberId())
-                        .content(cc.getContent())
-                        .createdAt(cc.getCreatedAt())
-                        .build()
-                ).collect(Collectors.toList());
-
 
         //3. 이후 notReadContentList의 가장 마지막 Id로 , lastReadContentId를 udpate
         /** (주의할 점) limit을 20으로 설정해도 20개가 없으면 20개가 넘어오질 못하니 , 실제 넘어온 거에 마지막 contentId로 update 쳐야 함
-         * 근데 , DB에 저장된 lastReadContentId 보다 이전 값이라면 , update 치면 안됨  <- 조건문으로 들어가 줘야 함 */
-        ChattingMember receiverChattingMember = chattingMemberRepository.findByChattingRoomIdAndMemberId(receiveDto.getChattingRoomId(), receiverMember.getId());
-        if(notReadContentList.get(notReadContentList.size()-1).getChattingContentId() > receiverChattingMember.getLastReadContentId()) {
-            receiverChattingMember.setLastReadContentId(notReadContentList.get(notReadContentList.size() - 1).getChattingContentId());
+         * 근데 , DB에 저장된 lastReadContentId 보다 이전 값이라면 , update 치면 안됨  <- 조건문으로 들어가 줘야 함 (멀티기기 상황을 가정하기 때문에, 검사를 해줘야 함) */
+
+
+        int size = notReadContentList.size();
+        ChattingContentDto lastChattingContentDto = notReadContentList.get(size - 1);
+
+        if(lastChattingContentDto.getChattingContentId() > receiverChattingMember.getLastReadContentId()) {
+            receiverChattingMember.setLastReadContentId(lastChattingContentDto.getChattingContentId());
         }
 
         //4. 응답 리턴
@@ -327,13 +326,25 @@ public class ChattingRoomService {
     public LastReadDto getLastReadContentId(Long memberId, Long chattingRoomId){
 
         //1. 일단 나는 그 ChattingRoom에 소속된 것이 맞는지 검사
-        existRoomWithMember(chattingRoomId, memberId);
+        ChattingRoom chattingRoom = chattingRoomRepository.findById(chattingRoomId).orElseThrow(
+                () -> {
+                    throw new ApiException(ApiResponseStatus.INVALID_CHATTING_ROOM_ID, "상대방의 lastContentId를 조회하는 시점 : ChattingRoomId가 유효하지 않습니다.");
+                }
+        );
+
+        /** [어차피 ChattingRoom을 조회해야 하는 상황이니 , 조회한 ChattingRoom을 가지고 유효성을 검사하자! - 별도의 exist~() 메소드를 정의하지 말고!] */
+        /** 조회하고자 하는 '나' 에 해당하는 Member가 그 ChattingRoom의 SellerId도 아니고 BuyerId도 아닌 경우 -> 조회하는 주체인 내가 - 그 ChattingRoom에 속하지 않게 됨  */
+        if(!chattingRoom.getSellerMemberId().equals(memberId) && !chattingRoom.getBuyerMemberId().equals(memberId)){
+            throw new ApiException(ApiResponseStatus.NOT_EXIST_CHATTING_ROOM, "상대방 lastReadCondtentId 조회 시점 : 상대방이 아닌 내가 그 채팅룸에 속하지 않습니다.");
+        }
 
         //2. 넘어온 정보를 기반으로 상대방 ChattingMember를 조회
-        ChattingRoom chattingRoom = chattingRoomRepository.findOne(chattingRoomId);
+        Long targetMemberId = chattingRoom.getSellerMemberId().equals(memberId) ? chattingRoom.getBuyerMemberId() : chattingRoom.getSellerMemberId();
         ChattingMember targetChattingMember = chattingMemberRepository
-                                                .findByChattingRoomIdAndMemberId(chattingRoomId,
-                                                        chattingRoom.getSellerMemberId().equals(memberId) ? chattingRoom.getBuyerMemberId() : chattingRoom.getSellerMemberId());
+                                                .findByChattingRoomIdAndMemberId(chattingRoomId, targetMemberId)
+                                                .orElseThrow(
+                                                        () -> {throw new ApiException(ApiResponseStatus.INVALID_CHATTING_MEMBER, "Target Chatting Member 조회 시점 : 유효한 Chatting Member 엔티티가 조회되지 않습니다.");}
+                                                );
 
         //3_1. 아직 읽은 메세지가 없다면 0을 리턴 or 값이 있다면 있는 값을 리턴
         /** 이때 어차피 ChattingMember의 경우 디폴트로 lastReadContentId를 0L로 초기화 시켰으므로 , 그냥 그 값을 가져오기만 하면 됨 */
