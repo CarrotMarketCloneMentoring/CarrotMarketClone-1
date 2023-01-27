@@ -1,9 +1,8 @@
-package com.daangn.clone.town.controller;
+package com.daangn.clone.town.service;
 
 import com.daangn.clone.town.Town;
 import com.daangn.clone.town.dto.TownDto;
 import com.daangn.clone.town.repository.TownRepository;
-import com.daangn.clone.town.service.TownService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -15,8 +14,8 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-
-public class TownControllerTest {
+@ExtendWith(MockitoExtension.class)
+public class TownServiceTest {
 
     @InjectMocks
     private TownService townService;
@@ -25,7 +24,7 @@ public class TownControllerTest {
     private TownRepository townRepository;
 
     @Test
-    void api5() throws Exception{
+    void 모든Town이름조회() {
         //given
         Town town1 = new Town("서울특별시_광진구_중곡제1동");
         Town town2 = new Town("서울특별시_광진구_중곡제2동");

@@ -300,7 +300,11 @@ public class ItemService{
         /** 여기서 무작정 Item과 연관된 ChattingRoomList를 페치조인하면 안됨.
          * 만약 연관된 ChattingRoomList가 없을 경우 , 조회되는 결과는 null이고 , 그에따라 NPE 가 발생함.
          * -> 즉 어쩔 수 없이 LAZY LOADING을 쓸 수 밖에 없는 상황 */
-        Item item = itemRepository.findOne(itemId);
+        Item item = itemRepository.findItemById(itemId).orElseThrow(
+                () -> {
+                    throw new ApiException(ApiResponseStatus.INVALID_ITEM_ID, "EXPECTED_BUYERS 조회시 : 해당 id를 가진 Item은 존재하지 않습니다.");
+                }
+        );
 
         //단 이 상품에 대해 채팅을 요청한 사람이 한명도 없으면 , 바로 리턴
         if(CollectionUtils.isEmpty(item.getChattingRoomList())){
@@ -356,28 +360,36 @@ public class ItemService{
      * -> 만약 예약중에서 판매완료로 변경하는 경우에는 -> 자동으로 판매 완료로 변경할 때 , 예약자로 선택한 사람에게 판매가 완료된다
      *
      * */
-    private void checkChangeToFOR_SALE(Long memberId, Long itemId){
+    private void checkChangeToFOR_SALE(Long memberId, Item item){
 
         //결국 itemId가 유효해야 하고 , 그 Item이 이 Member가 올린 상품이어야 한다는 검증 로직이 여기서도 적용되어야 하므로 , 메서드 호출
-        checkGetExpectedBuyers(memberId, itemId);
+
+
+        if(item.getSellerMember().getId()!=memberId){
+            throw new ApiException(ApiResponseStatus.INVALID_ITEM_ID, "EXPECTED_BUYERS 조회시 : 해당 상품이 , 해당 memberId의 Member가 올린 상품이 아닙니다.");
+        }
 
         //이제 username, itemId에 대한 검증은 마쳤으니 , nextSituation에 관련한 검증 시작
-        Item item = itemRepository.findOne(itemId);
-
         if(item.getItemStatus()==ItemStatus.FOR_SALE){
             throw new ApiException(ApiResponseStatus.INVALID_PREV_SITUATION, "판매중으로 변경시 : 이전 상품 상태가 예약완료 or 판매완료 인 경우에만 , 상품 상태를 판매중으로 변경시킬 수 있습니다.");
         }
 
     }
 
-    private void checkChangeToRESERVED(Long memberId, Long itemId, Long buyerMemberId){
+    private void checkChangeToRESERVED(Long memberId, Item item, Long buyerMemberId){
 
-        //결국 itemId가 유효해야 하고 , 그 Item이 이 Member가 올린 상품이어야 한다는 검증 로직이 여기서도 적용되어야 하므로 , 메서드 호출
-        checkGetExpectedBuyers(memberId, itemId);
+        //결국 itemId가 유효해야 하고 , 그 Item이 이 Member가 올린 상품이어야 한다는 검증 로직이 여기서도 적용되어야 하므로
+        //  결국 그 Item을 올린 판매자가 == username으로 된 Member가 맞는지를 검증
+
+        // 1. 이게 일치하려면 일단 itemId가 진짜 유효한 상품의 id 여야 함은 물론이고
+        // 2. 나아가 그 id로 된 Item의 sellerMember가 == username으로 된 Member 여야 한다.
+
+
+        if(item.getSellerMember().getId()!=memberId){
+            throw new ApiException(ApiResponseStatus.INVALID_ITEM_ID, "EXPECTED_BUYERS 조회시 : 해당 상품이 , 해당 memberId의 Member가 올린 상품이 아닙니다.");
+        }
 
         //이제 username, itemId에 대한 검증은 마쳤으니 , nextSituation에 관련한 검증 시작
-        Item item = itemRepository.findOne(itemId);
-
         if(item.getItemStatus()== RESERVED){
             throw new ApiException(ApiResponseStatus.INVALID_PREV_SITUATION, "예약중으로 변경시 : 이전 상품 상태가 판매중 or 판매완료 인 경우에만 , 상품 상태를 예약중으로 변경시킬 수 있습니다.");
         }
@@ -389,14 +401,19 @@ public class ItemService{
 
     }
 
-    private void checkChangeToSOLD_OUT(Long memberId, Long itemId, Long buyerMemberId){
+    private void checkChangeToSOLD_OUT(Long memberId, Item item, Long buyerMemberId){
 
-        //결국 itemId가 유효해야 하고 , 그 Item이 이 Member가 올린 상품이어야 한다는 검증 로직이 여기서도 적용되어야 하므로 , 메서드 호출
-        checkGetExpectedBuyers(memberId, itemId);
+        //결국 itemId가 유효해야 하고 , 그 Item이 이 Member가 올린 상품이어야 한다는 검증 로직이 여기서도 적용되어야 하므로
+        //  결국 그 Item을 올린 판매자가 == username으로 된 Member가 맞는지를 검증
+
+        // 1. 이게 일치하려면 일단 itemId가 진짜 유효한 상품의 id 여야 함은 물론이고
+        // 2. 나아가 그 id로 된 Item의 sellerMember가 == username으로 된 Member 여야 한다.
+
+        if(item.getSellerMember().getId()!=memberId){
+            throw new ApiException(ApiResponseStatus.INVALID_ITEM_ID, "EXPECTED_BUYERS 조회시 : 해당 상품이 , 해당 memberId의 Member가 올린 상품이 아닙니다.");
+        }
 
         //이제 username, itemId에 대한 검증은 마쳤으니 , nextSituation에 관련한 검증 시작
-        Item item = itemRepository.findOne(itemId);
-
         if(item.getItemStatus()==SOLD_OUT){
             throw new ApiException(ApiResponseStatus.INVALID_PREV_SITUATION, "판매완료로 변경시 : 이전 상품 상태가 판매중 or 예약중 인 경우에만 , 상품 상태를 판매완료로 변경시킬 수 있습니다.");
         }
@@ -419,11 +436,17 @@ public class ItemService{
     public ChangedSituationDto changeToFOR_SALE(Long memberId, Long itemId){
 
         //0. 검증 로직
-        checkChangeToFOR_SALE(memberId, itemId);
+        Item item = itemRepository.findItemById(itemId).orElseThrow(
+                () -> {
+                    throw new ApiException(ApiResponseStatus.INVALID_ITEM_ID, "EXPECTED_BUYERS 조회시 : 해당 id를 가진 Item은 존재하지 않습니다.");
+                }
+        );
+
+        checkChangeToFOR_SALE(memberId, item);
 
         //1. 상품 상태를 판매중으로 변경하고 && buyerMemberId 값을 null로 비워줌
-        changeItemStatus(itemId, FOR_SALE);
-        changeBuyerMemberId(itemId, null);
+        item.changeItemStatus(FOR_SALE);
+        item.changeBuyerMemberId(null);
 
         return ChangedSituationDto.builder()
                 .changedItemStatus(FOR_SALE)
@@ -433,20 +456,25 @@ public class ItemService{
     }
 
     @Transactional
-    public ChangedSituationDto changeToRESERVED(Long memberId, Long itemId, Long buyermemberId){
+    public ChangedSituationDto changeToRESERVED(Long memberId, Long itemId, Long buyerMemberId){
 
         //0. 검증 로직
-        checkChangeToRESERVED(memberId, itemId, buyermemberId);
+        Item item = itemRepository.findItemById(itemId).orElseThrow(
+                () -> {
+                    throw new ApiException(ApiResponseStatus.INVALID_ITEM_ID, "EXPECTED_BUYERS 조회시 : 해당 id를 가진 Item은 존재하지 않습니다.");
+                }
+        );
+        checkChangeToRESERVED(memberId, item, buyerMemberId);
 
         //1. 상품 상태를 예약중으로 변경하고 && buyerMemberId 값을 넘어온 값으로 설정해줌
         // 어차피 위 검증로직에서 , 이 Item은 이 username의 사용자가 올린게 맞고
         // 또한 예약자도 EXPECTED_BUYERS 들 중 하나라는게 검증되었으니!
-        changeItemStatus(itemId, RESERVED);
-        changeBuyerMemberId(itemId, buyermemberId);
+        item.changeItemStatus(RESERVED);
+        item.changeBuyerMemberId(buyerMemberId);
 
         return ChangedSituationDto.builder()
                 .changedItemStatus(RESERVED)
-                .buyerMemberId(buyermemberId)
+                .buyerMemberId(buyerMemberId)
                 .changedItemId(itemId)
                 .build();
     }
@@ -455,11 +483,16 @@ public class ItemService{
     public ChangedSituationDto changeToSOLD_OUT(Long memberId, Long itemId, Long buyerMemberId){
 
         //0. 검증 로직
-        checkChangeToSOLD_OUT(memberId, itemId, buyerMemberId);
+        Item item = itemRepository.findItemById(itemId).orElseThrow(
+                () -> {
+                    throw new ApiException(ApiResponseStatus.INVALID_ITEM_ID, "EXPECTED_BUYERS 조회시 : 해당 id를 가진 Item은 존재하지 않습니다.");
+                }
+        );
+        checkChangeToSOLD_OUT(memberId, item, buyerMemberId);
 
         //1. 상품 상태를 예약중으로 변경하고 && buyerMemberId 값을 넘어온 값으로 설정해줌
-        changeItemStatus(itemId, SOLD_OUT);
-        changeBuyerMemberId(itemId, buyerMemberId);
+        item.changeItemStatus(SOLD_OUT);
+        item.changeBuyerMemberId(buyerMemberId);
 
         return ChangedSituationDto.builder()
                 .changedItemStatus(SOLD_OUT)
@@ -468,22 +501,7 @@ public class ItemService{
                 .build();
     }
 
-    /**
-     * [dirty checking을 통한 변경 로직들]
-     * */
 
-    private void changeItemStatus(Long itemId, ItemStatus nextItemStatus){
-        //이미 itemId가 검증된 후에 사용하는거니까 -> Optional없이 바로 Item으로 리턴받을 수 있는것
-        Item item = itemRepository.findOne(itemId);
-        item.changeItemStatus(nextItemStatus);
-    }
-
-    private void changeBuyerMemberId(Long itemId, Long buyerMemberId){
-        //이미 itemId가 검증된 후에 사용하는거니까 -> Optional없이 바로 Item으로 리턴받을 수 있는것
-        Item item = itemRepository.findOne(itemId);
-        item.changeBuyerMemberId(buyerMemberId);
-
-    }
 
 
 

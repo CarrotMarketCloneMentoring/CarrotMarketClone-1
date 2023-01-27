@@ -1,26 +1,21 @@
-package com.daangn.clone.category.controller;
+package com.daangn.clone.category.service;
 
 import com.daangn.clone.category.Category;
 import com.daangn.clone.category.dto.CategoryDto;
 import com.daangn.clone.category.repository.CategoryRepository;
-import com.daangn.clone.category.service.CategoryService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.Rollback;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class CategoryControllerTest {
+public class CategoryServiceTest {
 
     @InjectMocks
     private CategoryService categoryService;
@@ -29,7 +24,7 @@ class CategoryControllerTest {
     private CategoryRepository categoryRepository;
 
     @Test
-    void api6(){
+    void 모든Category이름조회(){
         //given
         Category category1 = new Category("중고차");
         Category category2 = new Category("디지털기기");
