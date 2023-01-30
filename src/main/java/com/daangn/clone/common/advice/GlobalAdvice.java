@@ -30,7 +30,7 @@ public class GlobalAdvice {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse registerItemExHandler(ApiException e) {
+    public ApiResponse exHandler(ApiException e) {
         log.error("EXCEPTION = {} , INTERNAL_MESSAGE = {}", e.getStatus(), e.getInternalMessage());
         return ApiResponse.fail(e.getStatus());
     }
